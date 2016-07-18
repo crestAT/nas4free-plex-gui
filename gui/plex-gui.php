@@ -45,7 +45,7 @@ $pidfile = "/var/run/plex/plex.pid";
 $dummy = gettext("The changes have been applied successfully.");
 
 bindtextdomain("nas4free", "/usr/local/share/locale-plex");
-$pgtitle = array(gettext("Extensions"), "Plex Media Server Add-On GUI 0.3-alpha ".$config['plex-gui']['version']);
+$pgtitle = array(gettext("Extensions"), "Plex Media Server 0.4-alpha");
 
 $i =0;
 if ( is_array($config['rc']['postinit'] ) && is_array( $config['rc']['postinit']['cmd'] ) ) {
@@ -88,8 +88,11 @@ if ($_POST) {
     }
 
     if (isset($_POST['uninstall']) && $_POST['uninstall']) {
-        mwexec("plexinit -p && rm {$pidfile}", true);
-        mwexec("rm /usr/local/www/plex-gui.php && rm -R /usr/local/www/ext/plex-gui", true); 
+        mwexec("plexinit -p", true);
+        mwexec("rm /usr/local/www/plex-gui.php && rm -R /usr/local/www/ext/plex-gui", true);
+        if (isset($_POST['plexdata'])) { $uninstall_cmd = "rm -R {$rootfolder}"; }
+        else { $uninstall_cmd = "rm -R {$rootfolder}/plexmediaserver && rm -R {$rootfolder}/system && rm -R {$rootfolder}/gui && rm {$rootfolder}/plexinit {$rootfolder}/postinit"; }
+        mwexec($uninstall_cmd, true);
         if (is_array($config['rc']['postinit']) && is_array($config['rc']['postinit']['cmd'])) {
     		for ($i = 0; $i < count($config['rc']['postinit']['cmd']);) {
         		if (preg_match('/plexinit/', $config['rc']['postinit']['cmd'][$i])) { unset($config['rc']['postinit']['cmd'][$i]); }
@@ -145,7 +148,7 @@ $(document).ready(function(){
             <?php if (!empty($savemsg)) print_info_box($savemsg);?>
             <table width="100%" border="0" cellpadding="6" cellspacing="0">
     			<?php html_titleline("Plex ".gettext("Information"));?>
-                <?php html_text("installation_directory", gettext("Installation directory"), sprintf(gettext("The extension is installed in %s."), $rootfolder));?>
+                <?php html_text("installation_directory", gettext("Installation directory"), sprintf(gettext("The extension is installed in %s"), $rootfolder));?>
                 <?php html_text("plex_version", gettext("Version"), $plex_version);?>
                 <tr>
                     <td class="vncellt"><?=gettext("Status");?></td>
@@ -162,14 +165,22 @@ $(document).ready(function(){
                 ?>
             </table>
             <div id="remarks">
-                <?php html_remark("note", gettext("Note"), gettext("Hi Jose, Uninstall Plex GUI would call the new command line switch -guioff - we could also uninstall the whole Plex add-on etc. etc. ... ;)"));?>
+                <?php html_remark("note", gettext("Note"), gettext("Some remarks ... etc. etc."));?>
             </div>
             <div id="submit">
                 <input name="start" type="submit" class="formbtn" title="<?=gettext("Start Plex Media Server");?>" value="<?=gettext("Start");?>" />
                 <input name="stop" type="submit" class="formbtn" title="<?=gettext("Stop Plex Media Server");?>" value="<?=gettext("Stop");?>" />
                 <input name="restart" type="submit" class="formbtn" title="<?=gettext("Restart Plex Media Server");?>" value="<?=gettext("Restart");?>" />
                 <input name="upgrade" type="submit" class="formbtn" title="<?=gettext("Upgrade Plex Package");?>" value="<?=gettext("Update");?>" />
-                <input name="remove" type="submit" class="formbtn" title="<?=gettext("Remove Plex add-on GUI");?>" value="<?=gettext("Remove");?>" onclick="return confirm('<?=gettext("Plex add-on GUI will be removed, ready to proceed?");?>')" />
+            </div>
+            <table width="100%" border="0" cellpadding="6" cellspacing="0">
+    			<?php html_separator();?>
+                <?php html_titleline(gettext("Uninstall"));?>
+                <?php html_checkbox("plexdata", gettext("Plexdata"), false, "<font color='red'>".gettext("Activate to delete user data (metadata and configuration) as well during the uninstall process.")."</font>", gettext("If not activated the directory $rootfolder/plexdata remains intact on the server."), false);?>
+    			<?php html_separator();?>
+            </table>
+            <div id="submit1">
+                <input name="remove" type="submit" class="formbtn" title="<?=gettext("Remove Plex add-on GUI");?>" value="<?=gettext("Remove");?>" onclick="return confirm('<?=gettext("Plex Media Server GUI will be removed, ready to proceed?");?>')" />
                 <input name="uninstall" type="submit" class="formbtn" title="<?=gettext("Uninstall Plex Media Server");?>" value="<?=gettext("Uninstall");?>" onclick="return confirm('<?=gettext("Plex Media Server will be completely removed, ready to proceed?");?>')" />
             </div>
 		</td></tr>
