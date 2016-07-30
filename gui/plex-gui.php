@@ -39,9 +39,9 @@
 require("auth.inc");
 require("guiconfig.inc");
 
-$pgtitle = array(gettext("Extensions"), "Plex Media Server 0.1-b1");
+$pgtitle = array(gettext("Extensions"), "Plex Media Server 0.1-b2");
 
-// initialize some variables
+// Initialize some variables
 $pidfile = "/var/run/plex/plex.pid";
 if ( is_array($config['rc']['postinit'] ) && is_array( $config['rc']['postinit']['cmd'] ) ) {
     for ($i = 0; $i < count($config['rc']['postinit']['cmd']);) { if (preg_match('/plexinit/', $config['rc']['postinit']['cmd'][$i])) break; ++$i; }
@@ -49,7 +49,7 @@ if ( is_array($config['rc']['postinit'] ) && is_array( $config['rc']['postinit']
 $rootfolder = dirname($config['rc']['postinit']['cmd'][$i]);
 if ($rootfolder == "") $input_errors[] = gettext("Extension installed with fault");
 else {
-// initialize locales
+// Initialize locales
     $textdomain = "/usr/local/share/locale";
     $textdomain_plex = "/usr/local/share/locale-plex";
     if (!is_link($textdomain_plex)) { mwexec("ln -s {$rootfolder}/locale-plex {$textdomain_plex}", true); }
@@ -58,7 +58,7 @@ else {
 if (is_file("{$rootfolder}/postinit")) unlink("{$rootfolder}/postinit");
 
 $plex_version = exec("plexinit -v");
-$plexinit_version = exec("/bin/cat {$rootfolder}/plexinit | /usr/bin/grep SCRIPTVERSION | cut -d'\"' -f2");
+$plexinit_version = exec("/bin/cat {$rootfolder}/plexinit | /usr/bin/grep 'SCRIPTVERSION=' | /usr/bin/cut -d'\"' -f2");
 
 if ($_POST) {
     if (isset($_POST['start']) && $_POST['start']) {
@@ -85,10 +85,10 @@ if ($_POST) {
         else { $input_errors[] = gettext("Plex Media Server upgrade failed"); }
     }
 
-    if (isset($_POST['update']) && $_POST['update']) {
-        $return_val = mwexec("plexinit -x", true);
-        if ($return_val == 0) { $savemsg .= gettext("Plexinit script updated successfully"); }
-        else { $input_errors[] = gettext("Plexinit script update failed"); }
+    if (isset($_POST['backup']) && $_POST['backup']) {
+        $return_val = mwexec("mkdir -p {$rootfolder}/backup && cd {$rootfolder} && tar -zcf plexdata-`date +%Y-%m-%d-%S`.tgz plexdata && mv plexdata-*.tgz {$rootfolder}/backup", true);
+        if ($return_val == 0) { $savemsg .= gettext("Plexdata backup created successfully"); }
+        else { $input_errors[] = gettext("Plexdata backup failed"); }
     }
 
     if (isset($_POST['remove']) && $_POST['remove']) {
@@ -106,8 +106,9 @@ if ($_POST) {
         mwexec("plexinit -p", true);
         mwexec("pkg delete -y plexmediaserver && pkg delete -y compat9x-amd64", true);
         mwexec("rm /usr/local/www/plex-gui.php && rm -R /usr/local/www/ext/plex-gui", true);
+        mwexec("plexinit -t", true);
         if (isset($_POST['plexdata'])) { $uninstall_cmd = "rm -R {$rootfolder}"; }
-        else { $uninstall_cmd = "rm -Rf {$rootfolder}/locale-plex && rm -Rf {$rootfolder}/plexmediaserver && rm -Rf {$rootfolder}/system && rm -Rf {$rootfolder}/gui && rm {$rootfolder}/plexinit"; }
+        else { $uninstall_cmd = "rm -Rf {$rootfolder}/backup && rm -Rf {$rootfolder}/gui &&  rm -Rf {$rootfolder}/locale-plex && rm -Rf {$rootfolder}/system && rm -Rf {$rootfolder}/update && rm {$rootfolder}/plexinit"; }
         mwexec($uninstall_cmd, true);
         if (is_link("/usr/local/share/plexmediaserver")) mwexec("rm /usr/local/share/plexmediaserver", true);
         if (is_array($config['rc']['postinit']) && is_array($config['rc']['postinit']['cmd'])) {
@@ -190,7 +191,7 @@ $(document).ready(function(){
                 <input name="stop" type="submit" class="formbtn" title="<?=gettext("Stop Plex Media Server");?>" value="<?=gettext("Stop");?>" />
                 <input name="restart" type="submit" class="formbtn" title="<?=gettext("Restart Plex Media Server");?>" value="<?=gettext("Restart");?>" />
                 <input name="upgrade" type="submit" class="formbtn" title="<?=gettext("Upgrade Plex Package");?>" value="<?=gettext("Upgrade");?>" />
-                <input name="update" type="submit" class="formbtn" title="<?=gettext("Update Plexinit Script");?>" value="<?=gettext("Update");?>" />
+                <input name="backup" type="submit" class="formbtn" title="<?=gettext("Backup Plexdata Folder");?>" value="<?=gettext("Backup");?>" />
             </div>
             <table width="100%" border="0" cellpadding="6" cellspacing="0">
                 <?php html_separator();?>
